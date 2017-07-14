@@ -1,5 +1,5 @@
 @file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
-package org.jetbrains.koogie.util.placeholders;
+package ru.spbstu.ktuples.placeholders
 <%
 def k = number
 %>
