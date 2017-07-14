@@ -1,0 +1,24 @@
+package org.jetbrains.koogie.util;
+<%
+def k = number
+%>
+
+interface FunctionObject
+
+data class OmniConstant<R>(val v: R):
+<% k.times { m ->
+    def i = m + 1
+    def nothings = i.join{ 'Any?' }
+%>        ($nothings) -> R,
+<% } // k.times %>
+        FunctionObject {
+<% k.times { m ->
+    def i = m + 1
+    def nothings = i.join{ "v$it: Any?" }
+%>
+    override operator fun invoke($nothings) = v
+<% } // k.times %>
+}
+object Functions {
+    fun<T> const(v: T) = OmniConstant(v)
+}

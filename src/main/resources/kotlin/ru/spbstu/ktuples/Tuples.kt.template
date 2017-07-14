@@ -1,0 +1,126 @@
+@file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
+package org.jetbrains.koogie.util;
+<%
+def k = number
+%>
+
+interface Tuple{
+    companion object: Tuples()
+}
+
+object Tuple0: Tuple {
+    override fun toString() = "Tuple()"
+}
+fun Tuple0.joinTo(
+    buffer: StringBuilder,
+    separator: CharSequence = ", ",
+    prefix: CharSequence = "",
+    postfix: CharSequence = "",
+    limit: Int = -1,
+    truncated: CharSequence = "..."
+): StringBuilder = buffer.append(prefix).append(postfix)
+fun Tuple0.joinToString(
+        buffer: StringBuilder,
+        separator: CharSequence = ", ",
+        prefix: CharSequence = "",
+        postfix: CharSequence = "",
+        limit: Int = -1,
+        truncated: CharSequence = "..."
+): String = joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated).toString()
+<% (k-1).times { m ->
+    def i = m + 1
+    def types = (0..<i).collect{ "T$it" }
+
+    def local_tl = types.collect{ "out $it" }.join(', ')
+    def local_tlraw = types.join(', ')
+    def local_tcomp = types.collect{ "$it: Comparable<$it>" }.join(', ')
+    def string_template = (0..<i).collect{ "\$v$it" }.join(', ')
+    def local_params = (0..<i).collect{ "val v$it: ${types[it]}" }.join(', ')
+%>
+data class Tuple$i<$local_tl>($local_params): Tuple {
+    override fun toString() = "Tuple($string_template)"
+}
+operator fun<$local_tcomp> Tuple$i<$local_tlraw>.compareTo(other: Tuple$i<$local_tlraw>): Int {
+<% i.times { j -> %>
+     val res$j = v${j}.compareTo(other.v$j)
+     if(res$j != 0) return res$j
+<% } // i.times %>
+     return res${i - 1}
+}
+fun<$local_tlraw> Tuple$i<$local_tlraw>.joinTo(
+    buffer: StringBuilder,
+    separator: CharSequence = ", ",
+    prefix: CharSequence = "",
+    postfix: CharSequence = "",
+    limit: Int = -1,
+    truncated: CharSequence = "..."
+    ): StringBuilder {
+
+    buffer.append(prefix)
+    buffer.append(v0.toString())
+    var count = 1
+    if (limit >= 0 && count > limit) return buffer.append(truncated).append(postfix)
+<% (i-1).times { j -> %>
+    buffer.append(separator)
+    buffer.append(v${j+1}.toString())
+    ++count
+    if (limit >= 0 && count > limit) return buffer.append(truncated).append(postfix)
+<% } // i.times %>
+    buffer.append(postfix)
+    return buffer
+}
+fun<$local_tlraw> Tuple$i<$local_tlraw>.joinToString(
+    separator: CharSequence = ", ",
+    prefix: CharSequence = "",
+    postfix: CharSequence = "",
+    limit: Int = -1,
+    truncated: CharSequence = "..."
+): String {
+    return joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated).toString()
+}
+<% } // k.times { i ->
+%>
+
+open class Tuples {
+<% (k-1).times { m ->
+    def i = m + 1
+    def local_tl = (0..<i).collect{ "T$it" }.join(', ')
+    def local_params = (0..<i).collect{ "v$it: T$it" }.join(', ')
+    def local_args = (0..<i).collect{ "v$it" }.join(', ')
+%>
+    fun<$local_tl> make($local_params) = Tuple$i<$local_tl>($local_args)
+    inline operator fun<$local_tl> invoke($local_params) = Tuple$i<$local_tl>($local_args)
+<% } // k.times { i -> %>
+}
+
+inline fun<A, B, R> Pair<A, B>.letAll(f: (A, B) -> R) = f(first, second)
+inline fun<A, B, C, R> Triple<A, B, C>.letAll(f: (A, B, C) -> R) = f(first, second, third)
+inline fun<A, B, R> Map.Entry<A, B>.letAll(f: (A, B) -> R) = f(key, value)
+
+fun<A, B> Pair<A, B>.toTuple(): Tuple2<A, B> = Tuple(first, second)
+fun<A, B, C> Triple<A, B, C>.toTuple(): Tuple3<A, B, C> = Tuple(first, second, third)
+fun<A, B> Map.Entry<A, B>.toTuple(): Tuple2<A, B> = Tuple(key, value)
+
+inline fun Tuple0.toTypedArray() = arrayOf<Any>()
+inline fun<R> Tuple0.letAll(f: () -> R) = f()
+
+<% (k-1).times { m ->
+    def i = m + 1
+    def local_tl = (0..<i).collect{ "T$it" }.join(', ')
+    def local_params = (0..<i).collect{ "v$it: T$it" }.join(', ')
+    def local_args = (0..<i).collect{ "v$it" }.join(', ')
+ %>
+inline fun<reified T> Tuple$i<T${',T' * m}>.toTypedArray() = arrayOf($local_args)
+fun<T> Tuple$i<T${',T' * m}>.toList() = listOf($local_args)
+inline fun<$local_tl, R> Tuple$i<$local_tl>.letAll(f: ($local_tl) -> R) = f($local_args)
+infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Tuple$i<*${', *' * m}>)
+    = ${(0..<i).collect{ "(v$it === other.v$it)" }.join(' && ')}
+infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Any?)
+    = if(other is Tuple$i<*${', *' * m}>) identityEquals(other) else false
+inline fun<T> Tuple$i<T${',T' * m}>.all(predicate: (T) -> Boolean)
+    = ${(0..<i).collect{ "predicate(v$it)" }.join(' && ')}
+inline fun<T> Tuple$i<T${',T' * m}>.any(predicate: (T) -> Boolean)
+    = ${(0..<i).collect{ "predicate(v$it)" }.join(' || ')}
+inline fun<T> Tuple$i<T${',T' * m}>.none(predicate: (T) -> Boolean)
+    = ${(0..<i).collect{ "!predicate(v$it)" }.join(' && ')}
+<% } // k.times { i -> %>

@@ -1,0 +1,25 @@
+@file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
+package org.jetbrains.koogie.util.placeholders;
+<%
+def k = number
+%>
+
+open class Placeholder(val index: Int)
+<% k.times { m ->
+%>
+object _$m: Placeholder($m)
+<% } // k.times %>
+
+<% k.times { m ->
+       def tls = m.join{ "T$it" }
+       def vs = m.join{ "v$it" }
+       def vts = m.join{ "v$it: T$it" }
+       m.times { i ->
+            def vts_ = ((0..<m) - i).repeat{ "v$it: T$it" }
+%>
+inline fun<$tls, R> (($tls) -> R).bind(@Suppress("UNUSED_PARAMETER") ignore: _$i, v$i: T$i) =
+    { $vts_ -> invoke($vs) }
+<%     } // m.times
+   } // k.times
+%>
+
