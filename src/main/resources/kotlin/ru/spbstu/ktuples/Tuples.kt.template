@@ -6,10 +6,13 @@ def k = number
 
 interface Tuple{
     companion object: Tuples()
+
+    fun toArray(): Array<Any?>
 }
 
 object Tuple0: Tuple {
     override fun toString() = "Tuple()"
+    override fun toArray() = arrayOf<Any?>()
 }
 fun Tuple0.joinTo(
     buffer: StringBuilder,
@@ -39,6 +42,7 @@ fun Tuple0.joinToString(
 %>
 data class Tuple$i<$local_tl>($local_params): Tuple {
     override fun toString() = "Tuple($string_template)"
+    override fun toArray() = this.toTypedArray<Any?>()
 }
 operator fun<$local_tcomp> Tuple$i<$local_tlraw>.compareTo(other: Tuple$i<$local_tlraw>): Int {
 <% i.times { j -> %>
@@ -57,14 +61,14 @@ fun<$local_tlraw> Tuple$i<$local_tlraw>.joinTo(
     ): StringBuilder {
 
     buffer.append(prefix)
-    buffer.append(v0.toString())
     var count = 1
     if (limit >= 0 && count > limit) return buffer.append(truncated).append(postfix)
+    buffer.append(v0.toString())
 <% (i-1).times { j -> %>
     buffer.append(separator)
-    buffer.append(v${j+1}.toString())
     ++count
     if (limit >= 0 && count > limit) return buffer.append(truncated).append(postfix)
+    buffer.append(v${j+1}.toString())
 <% } // i.times %>
     buffer.append(postfix)
     return buffer
