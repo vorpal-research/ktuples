@@ -6,7 +6,7 @@
 
     <groupId>ru.spbstu</groupId>
     <artifactId>ktuples</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.0.1.2</version>
 
     <properties>
         <java.version>1.8</java.version>
@@ -68,6 +68,20 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
 
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
@@ -134,7 +148,7 @@
                 <executions>
                     <execution>
                         <id>compile</id>
-                        <phase>compile</phase>
+                        <phase>process-sources</phase>
                         <goals>
                             <goal>compile</goal>
                         </goals>
@@ -147,7 +161,7 @@
                     </execution>
                     <execution>
                         <id>test-compile</id>
-                        <phase>test-compile</phase>
+                        <phase>process-test-sources</phase>
                         <goals>
                             <goal>test-compile</goal>
                         </goals>
@@ -161,5 +175,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <distributionManagement>
+        <repository>
+            <id>bintray-vorpal-research-kotlin-maven</id>
+            <name>vorpal-research-kotlin-maven</name>
+            <url>https://api.bintray.com/maven/vorpal-research/kotlin-maven/ktuples/;publish=1</url>
+        </repository>
+    </distributionManagement>
 
 </project>

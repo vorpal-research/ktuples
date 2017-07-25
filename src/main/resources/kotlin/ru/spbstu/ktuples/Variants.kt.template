@@ -1,0 +1,46 @@
+@file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
+package ru.spbstu.ktuples;
+<%
+def k = number
+%>
+
+// Class declarations
+
+sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} > {
+    abstract val value: Any?
+}
+
+<% ((k - 1)..2).each{ m -> %>
+sealed class EitherOf${m}< ${(0..<m).collect{ "out T$it" }.join(', ')} >:
+            EitherOf${m+1}< ${(0..<m).collect{ "T$it" }.join(', ')}, Nothing >()
+<% } /* each m */ %>
+
+<% ((k - 1)..1).each{ m -> %>
+data class Variant${m}< T >(override val value: T):
+    EitherOf${m+1}< ${(0..<m).collect{ 'Nothing' }.join(', ')}, T >()
+<% } /* each m */ %>
+
+data class Variant0<T>(override val value: T):
+        EitherOf2<T, Nothing>()
+
+// Functions
+
+<% (k..2).each{ m -> %>
+@Suppress("UNCHECKED_CAST")
+fun <T> EitherOf${m}< ${(0..<m).collect{ 'T' }.join(', ')} >.converge() = value as T
+@Suppress("UNCHECKED_CAST")
+fun <T, R> EitherOf${m}< ${(0..<m).collect{ 'T' }.join(', ')} >.converge(f: (T) -> R) = f(value as T)
+<% } /* each m */ %>
+
+<% (k..2).each{ m -> %>
+<% def Tlist = (0..<m).collect{ "T$it" } %>
+<% def Ts = Tlist.join(', ') %>
+<%     (0..<m).each{ n -> %>
+@Suppress("UNCHECKED_CAST")
+fun < $Ts, R > EitherOf${m}< $Ts >.map${n}(f: (T${n}) -> R) =
+    when(this) {
+        is Variant${n} -> Variant${n}(f(value))
+        else -> this as EitherOf${m}< ${Tlist.collect{ it == "T$n" ? "R" : it }.join(', ')} >
+    }
+<%     } /* each n */ %>
+<% } /* each m */ %>
