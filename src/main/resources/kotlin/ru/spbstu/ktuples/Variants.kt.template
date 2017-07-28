@@ -5,10 +5,12 @@ def k = number
 %>
 
 // Class declarations
-
-sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} > {
+sealed class VariantBase {
     abstract val value: Any?
+    abstract val index: Int
 }
+
+sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} >: VariantBase()
 
 <% ((k - 1)..2).each{ m -> %>
 sealed class EitherOf${m}< ${(0..<m).collect{ "out T$it" }.join(', ')} >:
@@ -17,11 +19,16 @@ sealed class EitherOf${m}< ${(0..<m).collect{ "out T$it" }.join(', ')} >:
 
 <% ((k - 1)..1).each{ m -> %>
 data class Variant${m}< T >(override val value: T):
-    EitherOf${m+1}< ${(0..<m).collect{ 'Nothing' }.join(', ')}, T >()
+    EitherOf${m+1}< ${(0..<m).collect{ 'Nothing' }.join(', ')}, T >() {
+
+    override val index get() = $m
+}
 <% } /* each m */ %>
 
 data class Variant0<T>(override val value: T):
-        EitherOf2<T, Nothing>()
+        EitherOf2<T, Nothing>() {
+    override val index get() = 0
+}
 
 // Functions
 
@@ -43,4 +50,16 @@ fun < $Ts, R > EitherOf${m}< $Ts >.map${n}(f: (T${n}) -> R) =
         else -> this as EitherOf${m}< ${Tlist.collect{ it == "T$n" ? "R" : it }.join(', ')} >
     }
 <%     } /* each n */ %>
+<% } /* each m */ %>
+
+<% (k..2).each{ m -> %>
+<% def TList = (0..<m).collect{ "T$it" } %>
+<% def FullType = "EitherOf$m <${TList.join(', ')}>" %>
+operator fun < ${TList.collect{"$it: Comparable<$it>"}.join(', ')} >  ${FullType}.compareTo(that: ${FullType}): Int {
+    val ixs = index.compareTo(that.index)
+    if(ixs != 0) return ixs
+
+    @Suppress("UNCHECKED_CAST")
+    return (value as Comparable<Any?>).compareTo(that.value as Comparable<Any?>)
+}
 <% } /* each m */ %>

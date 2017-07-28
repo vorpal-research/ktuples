@@ -4,13 +4,15 @@ package ru.spbstu.ktuples;
 def k = number
 %>
 
-interface Tuple{
+sealed class Tuple {
     companion object: Tuples()
 
-    fun toArray(): Array<Any?>
+    abstract val size: Int
+    abstract fun toArray(): Array<Any?>
 }
 
-object Tuple0: Tuple {
+object Tuple0: Tuple() {
+    override val size = 0
     override fun toString() = "Tuple()"
     override fun toArray() = arrayOf<Any?>()
 }
@@ -40,7 +42,8 @@ fun Tuple0.joinToString(
     def string_template = (0..<i).collect{ "\$v$it" }.join(', ')
     def local_params = (0..<i).collect{ "val v$it: ${types[it]}" }.join(', ')
 %>
-data class Tuple$i<$local_tl>($local_params): Tuple {
+data class Tuple$i<$local_tl>($local_params): Tuple() {
+    override val size get() = $i
     override fun toString() = "Tuple($string_template)"
     override fun toArray() = this.toTypedArray<Any?>()
 }
@@ -86,6 +89,8 @@ fun<$local_tlraw> Tuple$i<$local_tlraw>.joinToString(
 %>
 
 open class Tuples {
+    fun make() = Tuple0
+    inline operator fun invoke() = Tuple0
 <% (k-1).times { m ->
     def i = m + 1
     def local_tl = (0..<i).collect{ "T$it" }.join(', ')
@@ -95,6 +100,20 @@ open class Tuples {
     fun<$local_tl> make($local_params) = Tuple$i<$local_tl>($local_args)
     inline operator fun<$local_tl> invoke($local_params) = Tuple$i<$local_tl>($local_args)
 <% } // k.times { i -> %>
+
+    fun ofArray(elements: Array<Any?>) = when(elements.size) {
+<% (k-1).times { m -> %>
+        $m -> make ( ${(0..<m).collect{ "elements[$it]" }.join(', ')} )
+<% } /* (k-1).times { m -> */ %>
+        else -> throw java.lang.IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
+    }
+
+    fun ofList(elements: List<Any?>) = when(elements.size) {
+<% (k-1).times { m -> %>
+        $m -> make ( ${(0..<m).collect{ "elements[$it]" }.join(', ')} )
+<% } /* (k-1).times { m -> */ %>
+        else -> throw java.lang.IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
+    }
 }
 
 inline fun<A, B, R> Pair<A, B>.letAll(f: (A, B) -> R) = f(first, second)
@@ -117,14 +136,35 @@ inline fun<R> Tuple0.letAll(f: () -> R) = f()
 inline fun<reified T> Tuple$i<T${',T' * m}>.toTypedArray() = arrayOf($local_args)
 fun<T> Tuple$i<T${',T' * m}>.toList() = listOf($local_args)
 inline fun<$local_tl, R> Tuple$i<$local_tl>.letAll(f: ($local_tl) -> R) = f($local_args)
-infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Tuple$i<*${', *' * m}>)
-    = ${(0..<i).collect{ "(v$it === other.v$it)" }.join(' && ')}
-infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Any?)
-    = if(other is Tuple$i<*${', *' * m}>) identityEquals(other) else false
-inline fun<T> Tuple$i<T${',T' * m}>.all(predicate: (T) -> Boolean)
-    = ${(0..<i).collect{ "predicate(v$it)" }.join(' && ')}
-inline fun<T> Tuple$i<T${',T' * m}>.any(predicate: (T) -> Boolean)
-    = ${(0..<i).collect{ "predicate(v$it)" }.join(' || ')}
-inline fun<T> Tuple$i<T${',T' * m}>.none(predicate: (T) -> Boolean)
-    = ${(0..<i).collect{ "!predicate(v$it)" }.join(' && ')}
+infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Tuple$i<*${', *' * m}>) =
+    ${(0..<i).collect{ "(v$it === other.v$it)" }.join(' && ')}
+infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Any?) =
+    if(other is Tuple$i<*${', *' * m}>) identityEquals(other) else false
+inline fun<T> Tuple$i<T${',T' * m}>.all(predicate: (T) -> Boolean) =
+    ${(0..<i).collect{ "predicate(v$it)" }.join(' && ')}
+inline fun<T> Tuple$i<T${',T' * m}>.any(predicate: (T) -> Boolean) =
+    ${(0..<i).collect{ "predicate(v$it)" }.join(' || ')}
+inline fun<T> Tuple$i<T${',T' * m}>.none(predicate: (T) -> Boolean) =
+    ${(0..<i).collect{ "!predicate(v$it)" }.join(' && ')}
 <% } // k.times { i -> %>
+
+<% (k-1).times { m -> %>
+<%     m.times { n -> %>
+<%         def typelist = (0..<m).collect{ "T$it" } %>
+inline fun<${typelist.join(', ')}, R> Tuple${m} <${typelist.join(', ')}>.map${n}(f: (T$n) -> R) =
+        Tuple(${(0..<m).collect{ it != n ? "v$it" : "f(v$it)" }.join(', ')})
+<%     } /* (each n -> */ %>
+<% } /* (each m -> */ %>
+
+<% (2..(k-1)).each { m -> %>
+<%     (1..(m-1)).each { l -> %>
+<%         def r = m - l %>
+<%         def typelist = (0..<m).collect{ "T$it" } %>
+inline operator fun<${typelist.join(', ')}> Tuple${l} <${typelist.take(l).join(', ')}>.plus(that: Tuple${r} <${typelist.drop(l).join(', ')}>) = run {
+    val (${(0..<l).collect{ "v$it" }.join(', ')}) = this
+    val (${(l..<m).collect{ "v$it" }.join(', ')}) = that
+    Tuple(${(0..<m).collect{ "v$it" }.join(', ')})
+}
+<%     } /* (each n -> */ %>
+<% } /* (each m -> */ %>
+
