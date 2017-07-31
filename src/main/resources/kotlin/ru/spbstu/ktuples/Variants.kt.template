@@ -10,6 +10,13 @@ sealed class VariantBase {
     abstract val index: Int
 }
 
+fun<T> Variant(index: Int, value: T): VariantBase = when(index) {
+<% ((k - 1)..0).each{ m -> %>
+    $m -> Variant${m} (value)
+<% } /* each m */ %>
+    else -> throw IllegalArgumentException("Index \$index too big: max value is ${k - 1}")
+}
+
 sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} >: VariantBase()
 
 <% ((k - 1)..2).each{ m -> %>

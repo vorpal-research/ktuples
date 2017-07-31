@@ -55,4 +55,10 @@ class VariantTest {
         val c = v0.converge { it.toString() }
         assertEquals("2", c)
     }
+
+    @Test
+    fun `dynamic constructor should work`() {
+        assertTrue(Variant(0, "Hello") is Variant0<*>)
+        assertEquals(Variant(0, 2), Variant0(2))
+    }
 }
