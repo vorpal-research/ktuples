@@ -17,11 +17,15 @@ fun<T> Variant(index: Int, value: T): VariantBase = when(index) {
     else -> throw IllegalArgumentException("Index \$index too big: max value is ${k - 1}")
 }
 
-sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} >: VariantBase()
+sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} >: VariantBase() {
+    companion object {}
+}
 
 <% ((k - 1)..2).each{ m -> %>
 sealed class EitherOf${m}< ${(0..<m).collect{ "out T$it" }.join(', ')} >:
-            EitherOf${m+1}< ${(0..<m).collect{ "T$it" }.join(', ')}, Nothing >()
+            EitherOf${m+1}< ${(0..<m).collect{ "T$it" }.join(', ')}, Nothing >() {
+    companion object {}
+}
 <% } /* each m */ %>
 
 <% ((k - 1)..1).each{ m -> %>
@@ -69,4 +73,9 @@ operator fun < ${TList.collect{"$it: Comparable<$it>"}.join(', ')} >  ${FullType
     @Suppress("UNCHECKED_CAST")
     return (value as Comparable<Any?>).compareTo(that.value as Comparable<Any?>)
 }
+fun < ${TList.collect{"$it: Comparable<$it>"}.join(', ')} >  EitherOf${m}.Companion.comparator() =
+    object: Comparator<$FullType> {
+        override fun compare(a: $FullType, b: $FullType) = a.compareTo(b)
+    }
+
 <% } /* each m */ %>

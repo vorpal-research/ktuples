@@ -61,4 +61,38 @@ class VariantTest {
         assertTrue(Variant(0, "Hello") is Variant0<*>)
         assertEquals(Variant(0, 2), Variant0(2))
     }
+
+    @Test
+    fun `compareTo should compare`() {
+        val v0: EitherOf3<Int, String, Double> = Variant0(2)
+        val v1: EitherOf3<Int, String, Double> = Variant1("Hi")
+        val v2: EitherOf3<Int, String, Double> = Variant1("Alloha")
+
+        assertTrue(v0 < v2)
+        assertTrue(v0 < v1)
+        assertTrue(v1 > v2)
+    }
+
+    @Test
+    fun `comparator() should compare`() {
+        val vals: MutableList<EitherOf3<Boolean, String, Int>> = mutableListOf()
+        vals += Variant0(false)
+        vals += Variant2(5)
+        vals += Variant1("Hello")
+        vals += Variant2(0)
+        vals += Variant1("Alloha")
+
+        vals.sortWith(EitherOf3.comparator())
+
+        assertEquals(
+                listOf(
+                        Variant0(false),
+                        Variant1("Alloha"),
+                        Variant1("Hello"),
+                        Variant2(0),
+                        Variant2(5)
+                        ),
+                vals
+        )
+    }
 }

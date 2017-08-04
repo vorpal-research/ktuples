@@ -46,6 +46,7 @@ data class Tuple$i<$local_tl>($local_params): Tuple() {
     override val size get() = $i
     override fun toString() = "Tuple($string_template)"
     override fun toArray() = this.toTypedArray<Any?>()
+    companion object {}
 }
 operator fun<$local_tcomp> Tuple$i<$local_tlraw>.compareTo(other: Tuple$i<$local_tlraw>): Int {
 <% i.times { j -> %>
@@ -53,6 +54,9 @@ operator fun<$local_tcomp> Tuple$i<$local_tlraw>.compareTo(other: Tuple$i<$local
      if(res$j != 0) return res$j
 <% } // i.times %>
      return res${i - 1}
+}
+fun<$local_tcomp> Tuple${i}.Companion.comparator() = object: Comparator<Tuple$i<$local_tlraw>> {
+    override fun compare(a: Tuple$i<$local_tlraw>, b: Tuple$i<$local_tlraw>) = a.compareTo(b);
 }
 fun<$local_tlraw> Tuple$i<$local_tlraw>.joinTo(
     buffer: StringBuilder,
@@ -156,6 +160,8 @@ inline fun<${typelist.join(', ')}, R> Tuple${m} <${typelist.join(', ')}>.map${n}
 <%     } /* (each n -> */ %>
 <% } /* (each m -> */ %>
 
+inline operator fun <T> Tuple0.plus(v0: T) = Tuple(v0)
+
 <% (2..(k-1)).each { m -> %>
 <%     (1..(m-1)).each { l -> %>
 <%         def r = m - l %>
@@ -168,3 +174,10 @@ inline operator fun<${typelist.join(', ')}> Tuple${l} <${typelist.take(l).join('
 <%     } /* (each n -> */ %>
 <% } /* (each m -> */ %>
 
+<% (2..(k-1)).each { m -> %>
+<%    def typelist = (0..<m).collect{ "T$it" } %>
+inline operator fun<${typelist.join(', ')}> Tuple${m-1} <${typelist.take(m-1).join(', ')}>.plus(v${m-1}: T${m-1}) = run {
+    val (${(0..<(m-1)).collect{ "v$it" }.join(', ')}) = this
+    Tuple(${(0..<m).collect{ "v$it" }.join(', ')})
+}
+<% } /* (each m -> */ %>

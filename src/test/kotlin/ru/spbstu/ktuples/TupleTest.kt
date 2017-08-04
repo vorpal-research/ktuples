@@ -73,4 +73,37 @@ class TupleTest {
         Tuple(2, "hello").any { it.toString().length > 4 }
         Tuple(2, "hello").none { it.toString().length > 5 }
     }
+
+    @Test
+    fun `compareTo should compare`() {
+        val v0 = Tuple(1, "Hello")
+        val v1 = Tuple(0, "Alloha")
+        val v2 = Tuple(1, "Alloha")
+
+        assertTrue(v0 > v1)
+        assertTrue(v2 > v1)
+        assertTrue(v2 < v0)
+    }
+
+    @Test
+    fun `comparator() should compare`() {
+        val vals = mutableListOf(Tuple(41, "Vasya", 5))
+        vals += Tuple(-3, "Masha", 2)
+        vals += Tuple(5, "Kostya", 2)
+        vals += Tuple(41, "Petya", 5)
+        vals += Tuple(5, "Kostya", 3)
+
+        vals.sortWith(Tuple3.comparator())
+
+        assertEquals(
+                listOf(
+                        Tuple(-3, "Masha", 2),
+                        Tuple(5, "Kostya", 2),
+                        Tuple(5, "Kostya", 3),
+                        Tuple(41, "Petya", 5),
+                        Tuple(41, "Vasya", 5)
+                ),
+                vals
+        )
+    }
 }
