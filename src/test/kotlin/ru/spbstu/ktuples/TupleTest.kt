@@ -69,9 +69,17 @@ class TupleTest {
 
     @Test
     fun `logical functions should work as in collections`() {
-        Tuple(2, "hello").all { it.toString().isNotEmpty() }
-        Tuple(2, "hello").any { it.toString().length > 4 }
-        Tuple(2, "hello").none { it.toString().length > 5 }
+        assertTrue(Tuple(2, "hello").all { it.toString().isNotEmpty() })
+        assertTrue(Tuple(2, "hello").any { it.toString().length > 4 })
+        assertTrue(Tuple(2, "hello").none { it.toString().length > 5 })
+    }
+
+
+    @Test
+    fun `plus should catenate`() {
+        assertEquals(Tuple(2, "Hello", 4.1, 8), Tuple(2, "Hello") + Tuple(4.1, 8))
+        assertEquals(Tuple(2, "Hello", 8), Tuple(2, "Hello") + 8)
+        assertEquals(Tuple(2, "Hello", 8), Tuple() + 2 + "Hello" + 8)
     }
 
     @Test
@@ -106,4 +114,30 @@ class TupleTest {
                 vals
         )
     }
+
+    @Test
+    fun `sorted() should sort`() {
+        assertEquals(Tuple(1,2,3), Tuple(1,2,3).sorted())
+        assertEquals(Tuple(1,2,3), Tuple(1,3,2).sorted())
+        assertEquals(Tuple(1,2,3), Tuple(2,1,3).sorted())
+        assertEquals(Tuple(1,2,3), Tuple(2,3,1).sorted())
+        assertEquals(Tuple(1,2,3), Tuple(3,2,1).sorted())
+        assertEquals(Tuple(1,2,3), Tuple(3,1,2).sorted())
+
+        assertEquals(Tuple(1,2,3,4,5,6), Tuple(6,5,4,3,2,1).sorted())
+        assertEquals(Tuple(1,2,3,4,5,6), Tuple(6,1,2,3,5,4).sorted())
+
+    }
+
+    @Test
+    fun `sortedWith() should sort`() {
+        assertEquals(Tuple(Tuple(1, 2), Tuple(1, 3), Tuple(2, 4), Tuple(7, 8)),
+                    Tuple(Tuple(2, 4), Tuple(1, 3), Tuple(7, 8), Tuple(1, 2)).sortedWith(Tuple2.comparator<Int, Int>()))
+
+        assertEquals(Tuple(Tuple(1, 2), Tuple(1, 3), Tuple(2, 4), Tuple(7, 8)),
+                Tuple(Tuple(2, 4), Tuple(1, 3), Tuple(7, 8), Tuple(1, 2)).sortedWith(Comparator{ a, b -> a.compareTo(b) }))
+
+        assertEquals(Tuple(6,5,4,3,2,1), Tuple(6,1,2,3,5,4).sortedWith(reverseOrder()))
+    }
+
 }
