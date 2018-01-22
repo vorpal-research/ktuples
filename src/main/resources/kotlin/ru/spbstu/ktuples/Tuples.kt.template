@@ -4,6 +4,9 @@ package ru.spbstu.ktuples;
 def k = number
 %>
 
+/**
+ * Base class for all tuples
+ */
 sealed class Tuple {
     companion object: Tuples()
 
@@ -11,11 +14,17 @@ sealed class Tuple {
     abstract fun toArray(): Array<Any?>
 }
 
+/**
+ * A 0-tuple, mostly exists for convenience
+ */
 object Tuple0: Tuple() {
     override val size = 0
     override fun toString() = "Tuple()"
     override fun toArray() = arrayOf<Any?>()
 }
+/**
+ * Join this tuple to [buffer]
+ */
 fun Tuple0.joinTo(
     buffer: StringBuilder,
     separator: CharSequence = ", ",
@@ -24,6 +33,9 @@ fun Tuple0.joinTo(
     limit: Int = -1,
     truncated: CharSequence = "..."
 ): StringBuilder = buffer.append(prefix).append(postfix)
+/**
+ * Join this tuple to a string
+ */
 fun Tuple0.joinToString(
         buffer: StringBuilder,
         separator: CharSequence = ", ",
@@ -34,31 +46,50 @@ fun Tuple0.joinToString(
 ): String = joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated).toString()
 <% (k-1).times { m ->
     def i = m + 1
-    def types = (0..<i).collect{ "T$it" }
 
-    def local_tl = types.collect{ "out $it" }.join(', ')
-    def local_tlraw = types.join(', ')
-    def local_tcomp = types.collect{ "$it: Comparable<$it>" }.join(', ')
-    def string_template = (0..<i).collect{ "\$v$it" }.join(', ')
-    def local_params = (0..<i).collect{ "val v$it: ${types[it]}" }.join(', ')
+    def types = i.join{ "T$it" }
+    def typesOut = i.join{ "out T$it" }
+    def typesComparable = i.join{ "T$it: Comparable<T$it>" }
+
+    def stringTemplate = i.join{ "\$v$it" }
+    def params = i.join{ "val v$it: T$it" }
 %>
-data class Tuple$i<$local_tl>($local_params): Tuple() {
+/**
+ * A $i-tuple, contains $i elements
+<% i.times { j -> %> *
+ * @param v$j the $j-th component of this tuple
+ * @param T$j the type of v$j
+<% } // i.times %> *
+ */
+data class Tuple$i<$typesOut>($params): Tuple() {
     override val size get() = $i
-    override fun toString() = "Tuple($string_template)"
+    override fun toString() = "Tuple($stringTemplate)"
     override fun toArray() = this.toTypedArray<Any?>()
     companion object {}
 }
-operator fun<$local_tcomp> Tuple$i<$local_tlraw>.compareTo(other: Tuple$i<$local_tlraw>): Int {
+/**
+ * Comparison operators for this [Tuple$i]
+ * Works in lexicographical order
+ */
+operator fun<$typesComparable> Tuple$i<$types>.compareTo(other: Tuple$i<$types>): Int {
 <% i.times { j -> %>
      val res$j = v${j}.compareTo(other.v$j)
      if(res$j != 0) return res$j
 <% } // i.times %>
      return res${i - 1}
 }
-fun<$local_tcomp> Tuple${i}.Companion.comparator() = object: Comparator<Tuple$i<$local_tlraw>> {
-    override fun compare(a: Tuple$i<$local_tlraw>, b: Tuple$i<$local_tlraw>) = a.compareTo(b);
+/**
+ * Comparator for this [Tuple$i]
+ * Works in lexicographical order
+ * @see compareTo
+ */
+fun<$typesComparable> Tuple${i}.Companion.comparator() = object: Comparator<Tuple$i<$types>> {
+    override fun compare(a: Tuple$i<$types>, b: Tuple$i<$types>) = a.compareTo(b);
 }
-fun<$local_tlraw> Tuple$i<$local_tlraw>.joinTo(
+/**
+ * Join this tuple to a buffer
+ */
+fun<$types> Tuple$i<$types>.joinTo(
     buffer: StringBuilder,
     separator: CharSequence = ", ",
     prefix: CharSequence = "",
@@ -80,7 +111,10 @@ fun<$local_tlraw> Tuple$i<$local_tlraw>.joinTo(
     buffer.append(postfix)
     return buffer
 }
-fun<$local_tlraw> Tuple$i<$local_tlraw>.joinToString(
+/**
+ * Join this tuple to string
+ */
+fun<$types> Tuple$i<$types>.joinToString(
     separator: CharSequence = ", ",
     prefix: CharSequence = "",
     postfix: CharSequence = "",
@@ -92,31 +126,49 @@ fun<$local_tlraw> Tuple$i<$local_tlraw>.joinToString(
 <% } // k.times { i ->
 %>
 
+/**
+ * Base class for all Tuple companion objects
+ * Provides auxilliary methods
+ */
 open class Tuples {
+    /**
+     * Make a tuple of size 0
+     */
     fun make() = Tuple0
     inline operator fun invoke() = Tuple0
 <% (k-1).times { m ->
     def i = m + 1
-    def local_tl = (0..<i).collect{ "T$it" }.join(', ')
-    def local_params = (0..<i).collect{ "v$it: T$it" }.join(', ')
-    def local_args = (0..<i).collect{ "v$it" }.join(', ')
+    def types = i.join{ "T$it" }
+    def params = i.join{ "v$it: T$it" }
+    def args = i.join{ "v$it" }
 %>
-    fun<$local_tl> make($local_params) = Tuple$i<$local_tl>($local_args)
-    inline operator fun<$local_tl> invoke($local_params) = Tuple$i<$local_tl>($local_args)
+    /**
+     * Make a tuple of size $i
+     */
+    fun<$types> make($params) = Tuple$i<$types>($args)
+    inline operator fun<$types> invoke($params) = Tuple$i<$types>($args)
 <% } // k.times { i -> %>
 
+    /**
+     * Make a tuple containing all the elements of [elements] array
+     * @throws IllegalArgumentException if there is no suitable tuple class available
+     */
     fun ofArray(elements: Array<Any?>) = when(elements.size) {
-<% (k-1).times { m -> %>
-        $m -> make ( ${(0..<m).collect{ "elements[$it]" }.join(', ')} )
+<% k.times { m -> %>
+        $m -> make(${ m.join{ "elements[$it]" } })
 <% } /* (k-1).times { m -> */ %>
-        else -> throw java.lang.IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
+        else -> throw IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
     }
 
+    /**
+     * Make a tuple containing all the elements of [elements] list
+     * @throws IllegalArgumentException if there is no suitable tuple class available
+     */
     fun ofList(elements: List<Any?>) = when(elements.size) {
-<% (k-1).times { m -> %>
-        $m -> make ( ${(0..<m).collect{ "elements[$it]" }.join(', ')} )
+<% k.times { m -> %>
+        $m -> make(${ m.join{ "elements[$it]" } })
 <% } /* (k-1).times { m -> */ %>
-        else -> throw java.lang.IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
+        else -> throw IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
     }
 }
 
@@ -133,49 +185,90 @@ inline fun<R> Tuple0.letAll(f: () -> R) = f()
 
 <% (k-1).times { m ->
     def i = m + 1
-    def local_tl = (0..<i).collect{ "T$it" }.join(', ')
-    def local_params = (0..<i).collect{ "v$it: T$it" }.join(', ')
-    def local_args = (0..<i).collect{ "v$it" }.join(', ')
+    def types = i.join{ "T$it" }
+    def args = i.join{ "v$it" }
+    def params = i.join{ "v$it: T$it" }
+    def ts = i.join{ 'T' }
+    def stars = i.join{ '*' }
  %>
-inline fun<reified T> Tuple$i<T${',T' * m}>.toTypedArray() = arrayOf($local_args)
-fun<T> Tuple$i<T${',T' * m}>.toList() = listOf($local_args)
-inline fun<$local_tl, R> Tuple$i<$local_tl>.letAll(f: ($local_tl) -> R) = f($local_args)
-infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Tuple$i<*${', *' * m}>) =
+/**
+ * Make an array containing the same elements as this tuple
+ */
+inline fun<reified T> Tuple$i<$ts>.toTypedArray() = arrayOf($args)
+/**
+ * Make a list containing the same elements as this tuple
+ */
+fun<T> Tuple$i<$ts>.toList() = listOf($args)
+/**
+ * Apply elements of this tuple as arguments to function [f]
+ */
+inline fun<$types, R> Tuple$i<$types>.letAll(f: ($types) -> R) = f($args)
+/**
+ * Piecewise identity comparison of elements of this tuple with other tuple
+ */
+infix fun<$types> Tuple$i<$types>.identityEquals(other: Tuple$i<$stars>) =
     ${(0..<i).collect{ "(v$it === other.v$it)" }.join(' && ')}
-infix fun<$local_tl> Tuple$i<$local_tl>.identityEquals(other: Any?) =
-    if(other is Tuple$i<*${', *' * m}>) identityEquals(other) else false
-inline fun<T> Tuple$i<T${',T' * m}>.all(predicate: (T) -> Boolean) =
+/**
+ * Piecewise identity comparison of elements of this tuple with another object
+ */
+infix fun<$types> Tuple$i<$types>.identityEquals(other: Any?) =
+    if(other is Tuple$i<$stars>) identityEquals(other) else false
+/**
+ * Test if all elements of this tuple satisfy [predicate]
+ */
+inline fun<T> Tuple$i<$ts>.all(predicate: (T) -> Boolean) =
     ${(0..<i).collect{ "predicate(v$it)" }.join(' && ')}
-inline fun<T> Tuple$i<T${',T' * m}>.any(predicate: (T) -> Boolean) =
+/**
+ * Test if any element of this tuple satisfies [predicate]
+ */
+inline fun<T> Tuple$i<$ts>.any(predicate: (T) -> Boolean) =
     ${(0..<i).collect{ "predicate(v$it)" }.join(' || ')}
-inline fun<T> Tuple$i<T${',T' * m}>.none(predicate: (T) -> Boolean) =
+/**
+ * Test if no elements of this tuple satisfy [predicate]
+ */
+inline fun<T> Tuple$i<$ts>.none(predicate: (T) -> Boolean) =
     ${(0..<i).collect{ "!predicate(v$it)" }.join(' && ')}
 <% } // k.times { i -> %>
 
 <% (k-1).times { m -> %>
 <%     m.times { n -> %>
-<%         def typelist = (0..<m).collect{ "T$it" } %>
-inline fun<${typelist.join(', ')}, R> Tuple${m} <${typelist.join(', ')}>.map${n}(f: (T$n) -> R) =
-        Tuple(${(0..<m).collect{ it != n ? "v$it" : "f(v$it)" }.join(', ')})
+<%         def types = m.join{ "T$it" } %>
+/**
+ * Map $n-th element of this tuple, returning an $m-tuple containing all the same elements except for
+ * element $n that is replaced by result of [f]
+ */
+inline fun<$types, R> Tuple${m} <$types>.map${n}(f: (T$n) -> R) =
+    Tuple(${m.join{ it != n ? "v$it" : "f(v$it)" }})
 <%     } /* (each n -> */ %>
 <% } /* (each m -> */ %>
 
+/**
+ * Empty tuple plus an element is a 1-tuple
+ */
 inline operator fun <T> Tuple0.plus(v0: T) = Tuple(v0)
 
 <% (2..(k-1)).each { m -> %>
 <%     (1..(m-1)).each { l -> %>
 <%         def r = m - l %>
 <%         def typelist = (0..<m).collect{ "T$it" } %>
+/**
+ * An $l-tuple plus an $r-tuple results in a ${l+r}-tuple containing all the elements of [this] and [that]
+ * in the same exact order
+ */
 inline operator fun<${typelist.join(', ')}> Tuple${l} <${typelist.take(l).join(', ')}>.plus(that: Tuple${r} <${typelist.drop(l).join(', ')}>) = run {
     val (${(0..<l).collect{ "v$it" }.join(', ')}) = this
     val (${(l..<m).collect{ "v$it" }.join(', ')}) = that
     Tuple(${(0..<m).collect{ "v$it" }.join(', ')})
 }
-<%     } /* (each n -> */ %>
+<%     } /* (each l -> */ %>
 <% } /* (each m -> */ %>
-
+<% /********************/ %>
 <% (2..(k-1)).each { m -> %>
 <%    def typelist = (0..<m).collect{ "T$it" } %>
+/**
+ * An ${m-1}-tuple plus a single element results in a ${m}-tuple containing all the elements of [this] and [that]
+ * in the same exact order
+ */
 inline operator fun<${typelist.join(', ')}> Tuple${m-1} <${typelist.take(m-1).join(', ')}>.plus(v${m-1}: T${m-1}) = run {
     val (${(0..<(m-1)).collect{ "v$it" }.join(', ')}) = this
     Tuple(${(0..<m).collect{ "v$it" }.join(', ')})

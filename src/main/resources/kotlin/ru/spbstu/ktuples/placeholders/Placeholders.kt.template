@@ -16,8 +16,12 @@ object _$m: Placeholder($m)
        def vts = m.join{ "v$it: T$it" }
        m.times { i ->
             def vts_ = ((0..<m) - i).repeat{ "v$it: T$it" }
+            def tls_ = ((0..<m) - i).repeat{ "T$it" }
 %>
-inline fun<$tls, R> (($tls) -> R).bind(@Suppress("UNUSED_PARAMETER") ignore: _$i, v$i: T$i) =
+/**
+ * Create a function with the same effect, but parameter #$i fixed to [v$i]
+ */
+inline fun<$tls, R> (($tls) -> R).bind(@Suppress("UNUSED_PARAMETER") ignore: _$i, v$i: T$i): ($tls_) -> R =
     { $vts_ -> invoke($vs) }
 <%     } // m.times
    } // k.times
