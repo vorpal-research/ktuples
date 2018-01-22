@@ -274,3 +274,45 @@ inline operator fun<${typelist.join(', ')}> Tuple${m-1} <${typelist.take(m-1).jo
     Tuple(${(0..<m).collect{ "v$it" }.join(', ')})
 }
 <% } /* (each m -> */ %>
+
+
+fun Tuple0.sorted() = this
+fun <T: Comparable<T>> Tuple1<T>.sorted() = this
+fun <T: Comparable<T>> Tuple2<T, T>.sorted() = if(v1 < v0) Tuple(v1, v0) else this
+
+<%
+    def sort2andSwap = { x, y -> "if(v$y < v$x) { val tmp = v$x; v$x = v$y; v$y = tmp }" }
+%>
+<% (3..(k-1)).each { m -> %>
+<%    def typelist = (0..<m).collect{ 'T' }.join(', ') %>
+<%    def vlist = (0..<m).collect{ "v$it" }.join(', ') %>
+fun <T: Comparable<T>> Tuple${m}<${typelist}>.sorted(): Tuple${m}<${typelist}> {
+    var (${vlist}) = this
+<%  (m-1).times { i ->
+       (m-i-1).times { j -> %>
+    ${sort2andSwap(j, j + 1)}
+<%      }/* (m-1).times { j -> */
+    } /* (m-1).times { i -> */ %>
+    return Tuple(${vlist})
+}
+<% } /* (1..(k-1)).each { m */ %>
+
+inline fun <T: Comparable<T>> Tuple1<T>.sortedWith(cmp: Comparator<T>) = this
+inline fun <T: Comparable<T>> Tuple2<T, T>.sortedWith(cmp: Comparator<T>) = if(cmp.compare(v1, v0) < 0) Tuple(v1, v0) else this
+
+<%
+    def sort2andSwapCmp = { x, y -> "if(cmp.compare(v$y, v$x) < 0) { val tmp = v$x; v$x = v$y; v$y = tmp }" }
+%>
+<% (3..(k-1)).each { m -> %>
+<%    def typelist = (0..<m).collect{ 'T' }.join(', ') %>
+<%    def vlist = (0..<m).collect{ "v$it" }.join(', ') %>
+inline fun <T> Tuple${m}<${typelist}>.sortedWith(cmp: Comparator<T>): Tuple${m}<${typelist}> {
+    var (${vlist}) = this
+<%  (m-1).times { i ->
+       (m-i-1).times { j -> %>
+    ${sort2andSwapCmp(j, j + 1)}
+<%      }/* (m-1).times { j -> */
+    } /* (m-1).times { i -> */ %>
+    return Tuple(${vlist})
+}
+<% } /* (1..(k-1)).each { m */ %>
