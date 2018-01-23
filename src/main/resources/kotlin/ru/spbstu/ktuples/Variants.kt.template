@@ -5,6 +5,11 @@ def k = number
 %>
 
 // Class declarations
+/**
+ * Base class for all Variant declarations
+ * @property value the boxed value
+ * @property index the index of value currently stored in the variant
+ */
 sealed class VariantBase {
     abstract val value: Any?
     abstract val index: Int
@@ -17,25 +22,40 @@ fun<T> Variant(index: Int, value: T): VariantBase = when(index) {
     else -> throw IllegalArgumentException("Index \$index too big: max value is ${k - 1}")
 }
 
-sealed class EitherOf${k}< ${(0..<k).collect{ "out T$it" }.join(', ')} >: VariantBase() {
+/**
+ * Class that may contain one of $k variants of different types in immutable fashion
+ */
+sealed class EitherOf${k}< ${k.join{ "out T$it" }} >: VariantBase() {
     companion object {}
 }
 
 <% ((k - 1)..2).each{ m -> %>
-sealed class EitherOf${m}< ${(0..<m).collect{ "out T$it" }.join(', ')} >:
-            EitherOf${m+1}< ${(0..<m).collect{ "T$it" }.join(', ')}, Nothing >() {
+/**
+ * Class that may contain one of $m variants of different types in immutable fashion
+ */
+sealed class EitherOf${m}< ${m.join{ "out T$it" }} >:
+            EitherOf${m+1}< ${m.join{ "T$it" }}, Nothing >() {
     companion object {}
 }
 <% } /* each m */ %>
 
 <% ((k - 1)..1).each{ m -> %>
+/**
+ * Class that contains a single variant with index $m and type T
+ * @param T the type of boxed value
+ * @param value the actual boxed value
+ */
 data class Variant${m}< T >(override val value: T):
-    EitherOf${m+1}< ${(0..<m).collect{ 'Nothing' }.join(', ')}, T >() {
+    EitherOf${m+1}< ${m.join{ 'Nothing' }}, T >() {
 
     override val index get() = $m
 }
 <% } /* each m */ %>
-
+/**
+ * Class that contains a single variant with index 0 and type T
+ * @param T the type of boxed value
+ * @param value the actual boxed value
+ */
 data class Variant0<T>(override val value: T):
         EitherOf2<T, Nothing>() {
     override val index get() = 0
@@ -44,10 +64,16 @@ data class Variant0<T>(override val value: T):
 // Functions
 
 <% (k..2).each{ m -> %>
+/**
+ * Get the value in this variant using the closest supertype of all types
+ */
 @Suppress("UNCHECKED_CAST")
-fun <T> EitherOf${m}< ${(0..<m).collect{ 'T' }.join(', ')} >.converge() = value as T
+fun <T> EitherOf${m}< ${m.join{ 'T' }} >.converge() = value as T
+/**
+ * Get the value in this variant using the closest supertype of all types supplied to [f]
+ */
 @Suppress("UNCHECKED_CAST")
-fun <T, R> EitherOf${m}< ${(0..<m).collect{ 'T' }.join(', ')} >.converge(f: (T) -> R) = f(value as T)
+fun <T, R> EitherOf${m}< ${m.join{ 'T' }} >.converge(f: (T) -> R) = f(value as T)
 <% } /* each m */ %>
 
 <% (k..2).each{ m -> %>
@@ -58,7 +84,7 @@ fun <T, R> EitherOf${m}< ${(0..<m).collect{ 'T' }.join(', ')} >.converge(f: (T) 
 fun < $Ts, R > EitherOf${m}< $Ts >.map${n}(f: (T${n}) -> R) =
     when(this) {
         is Variant${n} -> Variant${n}(f(value))
-        else -> this as EitherOf${m}< ${Tlist.collect{ it == "T$n" ? "R" : it }.join(', ')} >
+        else -> this as EitherOf${m}< ${m.join{ it == n ? "R" : "T$it" }} >
     }
 <%     } /* each n */ %>
 <% } /* each m */ %>
@@ -66,14 +92,14 @@ fun < $Ts, R > EitherOf${m}< $Ts >.map${n}(f: (T${n}) -> R) =
 <% (k..2).each{ m -> %>
 <% def TList = (0..<m).collect{ "T$it" } %>
 <% def FullType = "EitherOf$m <${TList.join(', ')}>" %>
-operator fun < ${TList.collect{"$it: Comparable<$it>"}.join(', ')} >  ${FullType}.compareTo(that: ${FullType}): Int {
+operator fun < ${m.join{"T$it: Comparable<T$it>"}} >  ${FullType}.compareTo(that: ${FullType}): Int {
     val ixs = index.compareTo(that.index)
     if(ixs != 0) return ixs
 
     @Suppress("UNCHECKED_CAST")
     return (value as Comparable<Any?>).compareTo(that.value as Comparable<Any?>)
 }
-fun < ${TList.collect{"$it: Comparable<$it>"}.join(', ')} >  EitherOf${m}.Companion.comparator() =
+fun < ${m.join{"T$it: Comparable<T$it>"}} > EitherOf${m}.Companion.comparator() =
     object: Comparator<$FullType> {
         override fun compare(a: $FullType, b: $FullType) = a.compareTo(b)
     }
