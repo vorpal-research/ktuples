@@ -26,7 +26,7 @@ All the tuples in this library are immutable. We may add `MutableTuple$N` types 
 This lib provides you with types `EitherOf2`, `EitherOf3`, `EitherOf4` and so on (up to `EitherOf7` by default) 
 of generic tagged unions that may contain one of several different types that are represented by types
 `Variant0`, `Variant1`, `Variant2` (up to `Variant7` by default). Kotlin type system handles the rest 
-(say, `Variant2<Int>` is not a valid value of type `EitherOf2<Int, String>` or  `EitherOf3<Int, Double, String>`, but
+(say, `Variant2(4)` is not a valid value of type `EitherOf2<Int, String>` or  `EitherOf3<Int, Double, String>`, but
 it a valid value of type `EitherOf3<String, Double, Int>`). Values are always boxed, so beware.
 
 As for tuples, when in doubt, roll up your own hierarchy of data classes: these are for generic use mostly.
