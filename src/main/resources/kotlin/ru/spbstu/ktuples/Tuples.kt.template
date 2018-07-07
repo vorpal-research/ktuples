@@ -21,6 +21,8 @@ object Tuple0: Tuple() {
     override val size = 0
     override fun toString() = "Tuple()"
     override fun toArray() = arrayOf<Any?>()
+
+    const val tupleSize = 0
 }
 /**
  * Join this tuple to [buffer]
@@ -65,7 +67,9 @@ data class Tuple$i<$typesOut>($params): Tuple() {
     override val size get() = $i
     override fun toString() = "Tuple($stringTemplate)"
     override fun toArray() = this.toTypedArray<Any?>()
-    companion object {}
+    companion object {
+        const val tupleSize = $i
+    }
 }
 /**
  * Comparison operators for this [Tuple$i]

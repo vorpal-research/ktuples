@@ -1,0 +1,29 @@
+package ru.spbstu.ktuples
+<%
+def k = number
+%>
+import ru.spbstu.ktuples.placeholders.*
+
+object KTuplesSummary {
+    const val generationLimit = $number
+
+    val tupleClasses = listOf(
+        ${ k.join{ "Tuple$it::class" }}
+    )
+
+    val eitherClasses = listOf(
+        ${ (k-1).join{ def i = it + 2; return "EitherOf$i::class" }}
+    )
+
+    val variantClasses = listOf(
+        ${ k.join{ "Variant$it::class" }}
+    )
+
+    val placeholders = listOf(
+        ${ k.join{ "_$it" } }
+    )
+}
+
+
+
+

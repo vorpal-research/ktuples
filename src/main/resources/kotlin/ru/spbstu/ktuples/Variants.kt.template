@@ -26,7 +26,9 @@ fun<T> Variant(index: Int, value: T): VariantBase = when(index) {
  * Class that may contain one of $k variants of different types in immutable fashion
  */
 sealed class EitherOf${k}< ${k.join{ "out T$it" }} >: VariantBase() {
-    companion object {}
+    companion object {
+        const val eitherArity = $k
+    }
 }
 
 <% ((k - 1)..2).each{ m -> %>
@@ -49,6 +51,10 @@ data class Variant${m}< T >(override val value: T):
     EitherOf${m+1}< ${m.join{ 'Nothing' }}, T >() {
 
     override val index get() = $m
+
+    companion object {
+        const val variantIndex = $m
+    }
 }
 <% } /* each m */ %>
 /**
