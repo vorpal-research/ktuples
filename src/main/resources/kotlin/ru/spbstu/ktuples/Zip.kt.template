@@ -1,0 +1,45 @@
+package ru.spbstu.ktuples
+<%
+def k = number
+%>
+
+<% (2..<k).each { m ->
+      def types = m.join{ "T$it" }
+      def args = m.join{ "c$it : Iterable<T$it>" }
+      def sargs = m.join{ "s$it : Sequence<T$it>" }
+      def cond = (0..<m).collect{ "it${it}.hasNext()" }.join(" && ")
+      def tup = m.join{ "it${it}.next()" } %>
+inline fun <${types}, R> zip(${args}, transform: (${types}) -> R): List<R> {
+    val result: MutableList<R> = mutableListOf()
+    <% m.times { l -> %>
+    val it$l = c${l}.iterator()
+    <% } /* m.times */ %>
+
+    while($cond) {
+        result.add(transform($tup))
+    }
+    return result
+}
+fun <${types}> zip(${args}): List<Tuple${m}<${types}>> =
+            zip(${ m.join{ "c$it" } }) { ${ m.join{ "x$it" } } -> Tuple(${ m.join{ "x$it" } }) }
+
+private class MergingSequence${m}<$types, R> (
+            ${ m.join{ "private val s$it : Sequence<T$it>" } },
+            private val transform: ($types) -> R
+    ) : Sequence<R> {
+    override fun iterator(): Iterator<R> = object : Iterator<R> {
+        <% m.times { l -> %>
+        val it$l = s${l}.iterator()
+        <% } /* m.times */ %>
+        override fun hasNext(): Boolean =
+            $cond
+        override fun next(): R =
+            transform($tup)
+    }
+}
+
+fun <${types}, R> zip(${sargs}, transform: (${types}) -> R): Sequence<R> =
+    MergingSequence${m}(${m.join{ "s$it" }}, transform)
+fun <${types}> zip(${sargs}): Sequence<Tuple${m}<${types}>> =
+    MergingSequence${m}(${m.join{ "s$it" }}) { ${ m.join{ "x$it" } } -> Tuple(${ m.join{ "x$it" } }) }
+<% } // k.times %>
