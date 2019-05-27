@@ -193,12 +193,18 @@ inline fun<R> Tuple0.letAll(f: () -> R) = f()
     def args = i.join{ "v$it" }
     def params = i.join{ "v$it: T$it" }
     def ts = i.join{ 'T' }
+    def rs = i.join{ 'R' }
     def stars = i.join{ '*' }
  %>
 /**
  * Make an array containing the same elements as this tuple
  */
 inline fun<reified T> Tuple$i<$ts>.toTypedArray() = arrayOf($args)
+/**
+ * Make an array containing the same elements as this tuple
+ */
+inline fun <T, R> Tuple$i<$ts>.mapEach(body: (T) -> R): Tuple$i<$rs> =
+    Tuple(${(0..<i).collect{ "body(v$it)" }.join(', ')})
 /**
  * Make a list containing the same elements as this tuple
  */
