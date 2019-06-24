@@ -208,11 +208,23 @@ inline fun <T, R> Tuple$i<$ts>.mapEach(body: (T) -> R): Tuple$i<$rs> =
 /**
  * Make a list containing the same elements as this tuple
  */
-fun<T> Tuple$i<$ts>.toList() = listOf($args)
+fun<T> Tuple$i<$ts>.toList(): List<T> =
+    listOf($args)
+/**
+ * Make a tuple containing the same elements as the collection
+ */
+fun<T> Tuple${i}.Companion.fromCollection(collection: Collection<T>): Tuple$i<$ts> = run {
+    require(collection.size == $i)
+    val it = collection.iterator()
+    Tuple(
+        ${ (0..< i).collect { "it.next()" }.join(',\n        ') }
+    )
+}
 /**
  * Apply elements of this tuple as arguments to function [f]
  */
-inline fun<$types, R> Tuple$i<$types>.letAll(f: ($types) -> R) = f($args)
+inline fun<$types, R> Tuple$i<$types>.letAll(f: ($types) -> R): R =
+    f($args)
 /**
  * Piecewise identity comparison of elements of this tuple with other tuple
  */

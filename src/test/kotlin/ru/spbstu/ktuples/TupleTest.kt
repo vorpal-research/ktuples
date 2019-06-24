@@ -2,6 +2,7 @@ package ru.spbstu.ktuples
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -138,6 +139,14 @@ class TupleTest {
                 Tuple(Tuple(2, 4), Tuple(1, 3), Tuple(7, 8), Tuple(1, 2)).sortedWith(Comparator{ a, b -> a.compareTo(b) }))
 
         assertEquals(Tuple(6,5,4,3,2,1), Tuple(6,1,2,3,5,4).sortedWith(reverseOrder()))
+    }
+
+    @Test
+    fun `fromCollection() works`() {
+        assertEquals(Tuple(1, 2, 3), Tuple3.fromCollection((1..3).toList()))
+        assertFailsWith<IllegalArgumentException> {
+            Tuple3.fromCollection((1..4).toList())
+        }
     }
 
 }
