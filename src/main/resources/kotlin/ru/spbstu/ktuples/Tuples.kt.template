@@ -184,6 +184,20 @@ fun<A, B> Pair<A, B>.toTuple(): Tuple2<A, B> = Tuple(first, second)
 fun<A, B, C> Triple<A, B, C>.toTuple(): Tuple3<A, B, C> = Tuple(first, second, third)
 fun<A, B> Map.Entry<A, B>.toTuple(): Tuple2<A, B> = Tuple(key, value)
 
+fun <A, B> Tuple2<A, B>.toPair() = Pair(v0, v1)
+fun <A, B, C> Tuple3<A, B, C>.toTriple() = Triple(v0, v1, v2)
+
+fun <A, B, M: MutableMap<A, B>> Iterable<Tuple2<A, B>>.toMap(m: M): M =
+        forEach { (k, v) -> m.set(k, v) }.let { m }
+fun <A, B> Collection<Tuple2<A, B>>.toMap(): Map<A, B> = when {
+    this.isEmpty() -> emptyMap()
+    else -> toMap(LinkedHashMap(size))
+}
+fun <A, B> Iterable<Tuple2<A, B>>.toMap(): Map<A, B> = when {
+    this is Collection<*> -> (this as Collection<Tuple2<A, B>>).toMap()
+    else -> toMap(mutableMapOf())
+}
+
 inline fun Tuple0.toTypedArray() = arrayOf<Any>()
 inline fun<R> Tuple0.letAll(f: () -> R) = f()
 
