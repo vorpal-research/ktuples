@@ -1,5 +1,8 @@
 @file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
 package ru.spbstu.ktuples.placeholders
+
+import ru.spbstu.ktuples.*
+
 <%
 def k = number
 %>
@@ -23,6 +26,14 @@ object _$m: Placeholder($m)
  */
 inline fun<$tls, R> (($tls) -> R).bind(@Suppress("UNUSED_PARAMETER") ignore: _$i, v$i: T$i): ($tls_) -> R =
     { $vts_ -> invoke($vs) }
+/**
+* Create a function with the same effect, but parameter #$i fixed to [v$i]
+*/
+@JvmName("bind2")
+inline fun<$tls, R> bind(crossinline f: ($tls) -> R, @Suppress("UNUSED_PARAMETER") ignore: _$i, v$i: T$i): ($tls_) -> R =
+    { $vts_ -> f($vs) }
+
+inline operator fun <$tls> Tuple$m<$tls>.get(@Suppress("UNUSED_PARAMETER") ignore: _$i): T$i = v$i
 <%     } // m.times
    } // k.times
 %>
