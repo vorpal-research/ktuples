@@ -2,6 +2,7 @@
 package ru.spbstu.ktuples.placeholders
 
 import ru.spbstu.ktuples.*
+import kotlin.jvm.JvmName
 
 <%
 def k = number

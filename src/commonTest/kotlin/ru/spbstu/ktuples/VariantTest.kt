@@ -1,18 +1,18 @@
 package ru.spbstu.ktuples
 
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class VariantTest {
     @Test
-    fun `sanity check`() {
+    fun `sanity_check`() {
         val tp = if(true) Variant0(2) else Variant1("Hello")
         assertEquals(tp.value, 2)
     }
 
     @Test
-    fun `when should be exhaustive`() {
+    fun `when_should_be_exhaustive`() {
         val v0: EitherOf3<Int, Double, String> = Variant0(value = 4)
 
         val result: String = // force exhaustiveness check
@@ -27,7 +27,7 @@ class VariantTest {
     }
 
     @Test
-    fun `map should not change other values`() {
+    fun `map_should_not_change_other_values`() {
         val v0 = Variant0(2) ?: Variant1("Hello")
 
         assertTrue(v0 is EitherOf2)
@@ -38,7 +38,7 @@ class VariantTest {
     }
 
     @Test
-    fun `map should change values accordingly`() {
+    fun `map_should_change_values_accordingly`() {
         val v0 = Variant1("Hello") ?: Variant0(2) ?: Variant2(3.15)
 
         assertTrue(v0 is EitherOf3)
@@ -49,7 +49,7 @@ class VariantTest {
     }
 
     @Test
-    fun `converge should converge`() {
+    fun `converge_should_converge`() {
         val v0 = Variant0(2) ?: Variant1("Hello")
 
         val c = v0.converge { it.toString() }
@@ -57,13 +57,13 @@ class VariantTest {
     }
 
     @Test
-    fun `dynamic constructor should work`() {
+    fun `dynamic_constructor_should_work`() {
         assertTrue(Variant(0, "Hello") is Variant0<*>)
         assertEquals(Variant(0, 2), Variant0(2))
     }
 
     @Test
-    fun `compareTo should compare`() {
+    fun `compareTo_should_compare`() {
         val v0: EitherOf3<Int, String, Double> = Variant0(2)
         val v1: EitherOf3<Int, String, Double> = Variant1("Hi")
         val v2: EitherOf3<Int, String, Double> = Variant1("Alloha")
@@ -74,7 +74,7 @@ class VariantTest {
     }
 
     @Test
-    fun `comparator() should compare`() {
+    fun `comparator_should_compare`() {
         val vals: MutableList<EitherOf3<Boolean, String, Int>> = mutableListOf()
         vals += Variant0(false)
         vals += Variant2(5)

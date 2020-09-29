@@ -1,12 +1,12 @@
 package ru.spbstu.ktuples
 
-import org.junit.Test
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ZipTest {
 
     @Test
-    fun `simple cases`() {
+    fun `simple_cases`() {
         val l0 = listOf(1, 2, 3, 4)
         val l1 = listOf('a', 'b', 'c')
 
@@ -22,7 +22,7 @@ class ZipTest {
     }
 
     @Test
-    fun `simple cases for sequences`() {
+    fun `simple_cases_for_sequences`() {
         val s0 = "Hello".asSequence()
         val s1 = generateSequence(0) { it + 1 }
 
@@ -39,7 +39,7 @@ class ZipTest {
     }
 
     @Test
-    fun `infinite sequences`() {
+    fun `infinite_sequences`() {
         val s0 = generateSequence(0) { it + 1 }
         val s1 = generateSequence(0) { it + 1 }.drop(1)
         val s2 = generateSequence(0) { it + 1 }.drop(2)
