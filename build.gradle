@@ -1,0 +1,151 @@
+import groovy.io.FileType
+import groovy.text.GStringTemplateEngine
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
+plugins {
+    id("org.jetbrains.kotlin.multiplatform").version("1.4.10")
+    id "maven-publish"
+}
+
+group 'ru.spbstu'
+version (findProperty('forceVersion') ?: '0.0.2.0')
+
+repositories {
+    maven {
+        url = "https://dl.bintray.com/vorpal-research/kotlin-maven"
+    }
+    jcenter()
+}
+
+task gen() {
+    def srcDir = file("src/commonMain/resources/kotlin")
+    def dstDir = file("src/commonMain/kotlin")
+
+    outputs.dir(dstDir)
+    inputs.dir(srcDir)
+    doLast {
+        def binding = [number: Integer.parseInt(project.findProperty("generationDepth") ?: "7")]
+        def engine = new GStringTemplateEngine()
+
+        def newFiles = []
+
+        mkdir dstDir
+
+        srcDir.eachFileRecurse(FileType.FILES) { file ->
+            if (file.name.endsWith(".template")) {
+                println "Processing template " + file
+
+                def rel = srcDir.toURI().relativize(file.toURI())
+                def newFile = new File(dstDir.toURI().resolve(rel))
+
+                newFile = new File(newFile.parentFile, newFile.name.replace(".template", ""))
+                mkdir newFile.parentFile
+                newFile.createNewFile()
+                newFiles.add([file, newFile])
+            }
+        }
+
+        newFiles.each { file ->
+            List.metaClass.map = { lambda -> delegate.map(lambda) }
+            List.metaClass.repeat = { lambda -> delegate.collect(lambda).join(', ') }
+            Integer.metaClass.join = { lambda -> (0..<delegate).repeat(lambda) }
+
+            def template = engine.createTemplate(file[0]).make(binding)
+
+            println "Writing file " + file[1]
+
+            file[1].withWriter { writer -> template.writeTo(writer) }
+        }
+    }
+
+}
+
+kotlin {
+    jvm {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.6"
+            }
+        }
+    }
+    js {
+        nodejs()
+        browser {
+            testTask {
+                useKarma {
+                    usePhantomJS()
+                }
+            }
+        }
+    }
+
+    targets.all {
+        compilations.all {
+            compileKotlinTask.dependsOn(gen)
+        }
+    }
+
+    sourceSets {
+        all {
+            languageSettings {
+                languageVersion = "1.4"
+                apiVersion = "1.4"
+                useExperimentalAnnotation("kotlin.RequiresOptIn")
+            }
+        }
+
+        commonMain {
+        }
+        commonTest {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(kotlin("test-common"))
+                implementation(kotlin("test-annotations-common"))
+            }
+        }
+        jvmMain {
+            dependsOn(commonMain)
+        }
+        jvmTest {
+            dependsOn(commonTest)
+            dependsOn(jvmMain)
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(kotlin("test-testng"))
+            }
+        }
+        jsMain {
+            dependsOn(commonMain)
+        }
+        jsTest {
+            dependsOn(commonTest)
+            dependsOn(jsMain)
+            dependencies {
+                api(kotlin("test-js"))
+            }
+        }
+    }
+}
+
+clean {
+    afterEvaluate {
+        delete 'src/commonMain/kotlin'
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url = "https://api.bintray.com/maven/${bintrayOrg}/${bintrayRepo}/${project.name}/;publish=1;override=1"
+            credentials {
+                username (project.findProperty('bintrayUsername') ?: System.getenv('BINTRAY_USERNAME'))
+                password (project.findProperty('bintrayPassword') ?: System.getenv('BINTRAY_PASSWORD'))
+            }
+        }
+    }
+}
