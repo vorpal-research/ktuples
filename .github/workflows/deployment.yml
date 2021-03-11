@@ -20,5 +20,5 @@ jobs:
       run: |
         ./gradlew -PforceVersion=${{ github.event.release.tag_name }} publish || echo "deploy failed" >&2
       env:
-        DEPLOY_USERNAME: ${{ vorpal-reseacher }}
+        DEPLOY_USERNAME: vorpal-reseacher
         DEPLOY_PASSWORD: ${{ secrets.ORG_GITHUB_TOKEN }}
