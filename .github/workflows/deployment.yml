@@ -15,8 +15,8 @@ jobs:
       uses: actions/setup-java@v1
       with:
         java-version: 1.8
-    - name: Deploy to Bintray
-      id: deploy-to-bintray
+    - name: Deploy to Github Packages
+      id: deploy-to-github
       run: |
         ./gradlew -PforceVersion=${{ github.event.release.tag_name }} publish || echo "deploy failed" >&2
       env:
