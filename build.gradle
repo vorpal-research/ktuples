@@ -140,8 +140,8 @@ publishing {
         maven {
             url = "https://maven.pkg.github.com/vorpal-research/kotlin-maven"
             credentials {
-                username = (project.findProperty('deployUsername') ?: System.getenv('DEPLOY_USERNAME'))
-                password = (project.findProperty('deployPassword') ?: System.getenv('DEPLOY_PASSWORD'))
+                username (project.findProperty('githubActor') ?: "vorpal-reseacher")
+                password (project.findProperty('githubToken') ?: System.getenv('GITHUB_TOKEN'))
             }
         }
     }
