@@ -13,7 +13,7 @@ plugins {
 }
 
 group 'ru.spbstu'
-version (findProperty('forceVersion') ?: '0.0.2.1')
+version (findProperty('forceVersion') ?: '0.0.2.2')
 
 repositories {
     mavenCentral()
@@ -141,8 +141,8 @@ publishing {
             name = "GitHubPackages"
             url = "https://maven.pkg.github.com/vorpal-research/kotlin-maven"
             credentials {
-                username = (project.findProperty('githubActor') ?: System.getenv('GITHUB_ACTOR')).trim()
-                password = (project.findProperty('githubToken') ?: System.getenv('GITHUB_TOKEN')).trim()
+                username = (project.findProperty('githubActor') ?: System.getenv('GITHUB_ACTOR'))
+                password = (project.findProperty('githubToken') ?: System.getenv('GITHUB_TOKEN'))
             }
         }
     }
