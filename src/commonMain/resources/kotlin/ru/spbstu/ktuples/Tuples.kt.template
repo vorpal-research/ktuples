@@ -27,19 +27,18 @@ object Tuple0: Tuple() {
 /**
  * Join this tuple to [buffer]
  */
-fun Tuple0.joinTo(
-    buffer: StringBuilder,
+fun <A: Appendable> Tuple0.joinTo(
+    buffer: A,
     separator: CharSequence = ", ",
     prefix: CharSequence = "",
     postfix: CharSequence = "",
     limit: Int = -1,
     truncated: CharSequence = "..."
-): StringBuilder = buffer.append(prefix).append(postfix)
+): A = buffer.apply { append(prefix).append(postfix) }
 /**
  * Join this tuple to a string
  */
 fun Tuple0.joinToString(
-        buffer: StringBuilder,
         separator: CharSequence = ", ",
         prefix: CharSequence = "",
         postfix: CharSequence = "",
@@ -93,23 +92,29 @@ fun<$typesComparable> Tuple${i}.Companion.comparator() = object: Comparator<Tupl
 /**
  * Join this tuple to a buffer
  */
-fun<$types> Tuple$i<$types>.joinTo(
-    buffer: StringBuilder,
+fun<$types, A: Appendable> Tuple$i<$types>.joinTo(
+    buffer: A,
     separator: CharSequence = ", ",
     prefix: CharSequence = "",
     postfix: CharSequence = "",
     limit: Int = -1,
     truncated: CharSequence = "..."
-    ): StringBuilder {
+    ): A {
 
     buffer.append(prefix)
     var count = 1
-    if (limit >= 0 && count > limit) return buffer.append(truncated).append(postfix)
+    if (limit >= 0 && count > limit) {
+        buffer.append(truncated).append(postfix)
+        return buffer
+    }
     buffer.append(v0.toString())
 <% (i-1).times { j -> %>
     buffer.append(separator)
     ++count
-    if (limit >= 0 && count > limit) return buffer.append(truncated).append(postfix)
+    if (limit >= 0 && count > limit) {
+        buffer.append(truncated).append(postfix)
+        return buffer
+    }
     buffer.append(v${j+1}.toString())
 <% } // i.times %>
     buffer.append(postfix)
