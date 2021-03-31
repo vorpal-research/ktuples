@@ -35,6 +35,10 @@ inline fun<$tls, R> bind(crossinline f: ($tls) -> R, @Suppress("UNUSED_PARAMETER
     { $vts_ -> f($vs) }
 
 inline operator fun <$tls> Tuple$m<$tls>.get(@Suppress("UNUSED_PARAMETER") ignore: _$i): T$i = v$i
+inline operator fun <$tls> MutableTuple$m<$tls>.get(@Suppress("UNUSED_PARAMETER") ignore: _$i): T$i = v$i
+inline operator fun <$tls> MutableTuple$m<$tls>.set(@Suppress("UNUSED_PARAMETER") ignore: _$i, value: T$i) {
+    v$i = value
+}
 <%     } // m.times
    } // k.times
 %>

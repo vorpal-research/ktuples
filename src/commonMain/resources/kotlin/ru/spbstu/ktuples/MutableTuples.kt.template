@@ -1,0 +1,417 @@
+@file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
+package ru.spbstu.ktuples;
+<%
+def k = number
+%>
+
+/**
+ * Base class for all tuples
+ */
+sealed class MutableTuple {
+    companion object: MutableTuples()
+
+    abstract val size: Int
+    abstract fun toArray(): Array<Any?>
+}
+
+/**
+ * A 0-tuple, mostly exists for convenience
+ */
+object MutableTuple0: MutableTuple() {
+    override val size = 0
+    override fun toString() = "Tuple()"
+    override fun toArray() = arrayOf<Any?>()
+
+    const val tupleSize = 0
+}
+/**
+ * Join this tuple to [buffer]
+ */
+fun <A: Appendable> MutableTuple0.joinTo(
+    buffer: A,
+    separator: CharSequence = ", ",
+    prefix: CharSequence = "",
+    postfix: CharSequence = "",
+    limit: Int = -1,
+    truncated: CharSequence = "..."
+): A = buffer.apply { append(prefix).append(postfix) }
+/**
+ * Join this tuple to a string
+ */
+fun MutableTuple0.joinToString(
+        separator: CharSequence = ", ",
+        prefix: CharSequence = "",
+        postfix: CharSequence = "",
+        limit: Int = -1,
+        truncated: CharSequence = "..."
+): String = joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated).toString()
+/**
+ * Convert mutable tuple to tuple
+ */
+fun MutableTuple0.toTuple(): Tuple0 = Tuple0
+/**
+ * Convert tuple to mutable tuple
+ */
+fun Tuple0.toMutableTuple(): MutableTuple0 = MutableTuple0
+
+<% (k-1).times { m ->
+    def i = m + 1
+
+    def types = i.join{ "T$it" }
+    def typesComparable = i.join{ "T$it: Comparable<T$it>" }
+
+    def stringTemplate = i.join{ "\$v$it" }
+    def params = i.join{ "var v$it: T$it" }
+    def args = i.join{ "v$it" }
+%>
+
+/**
+ * A mutable $i-tuple, contains $i elements
+<% i.times { j -> %> *
+ * @param v$j the $j-th component of this tuple
+ * @param T$j the type of v$j
+<% } // i.times %> *
+ */
+data class MutableTuple$i<$types>($params): MutableTuple() {
+    override val size get() = $i
+    override fun toString() = "MutableTuple($stringTemplate)"
+    override fun toArray() = arrayOf<Any?>($args)
+    companion object {
+        const val tupleSize = $i
+    }
+}
+/**
+ * Comparison operators for this [MutableTuple$i]
+ * Works in lexicographical order
+ */
+operator fun<$typesComparable> MutableTuple$i<$types>.compareTo(other: MutableTuple$i<$types>): Int {
+<% i.times { j -> %>
+     val res$j = v${j}.compareTo(other.v$j)
+     if(res$j != 0) return res$j
+<% } // i.times %>
+     return res${i - 1}
+}
+/**
+ * Comparator for this [MutableTuple$i]
+ * Works in lexicographical order
+ * @see compareTo
+ */
+fun<$typesComparable> MutableTuple${i}.Companion.comparator() = object: Comparator<MutableTuple$i<$types>> {
+    override fun compare(a: MutableTuple$i<$types>, b: MutableTuple$i<$types>) = a.compareTo(b);
+}
+/**
+ * Join this tuple to a buffer
+ */
+fun<$types, A: Appendable> MutableTuple$i<$types>.joinTo(
+    buffer: A,
+    separator: CharSequence = ", ",
+    prefix: CharSequence = "",
+    postfix: CharSequence = "",
+    limit: Int = -1,
+    truncated: CharSequence = "..."
+    ): A {
+
+    buffer.append(prefix)
+    var count = 1
+    if (limit >= 0 && count > limit) {
+        buffer.append(truncated).append(postfix)
+        return buffer
+    }
+    buffer.append(v0.toString())
+<% (i-1).times { j -> %>
+    buffer.append(separator)
+    ++count
+    if (limit >= 0 && count > limit) {
+        buffer.append(truncated).append(postfix)
+        return buffer
+    }
+    buffer.append(v${j+1}.toString())
+<% } // i.times %>
+    buffer.append(postfix)
+    return buffer
+}
+/**
+ * Join this tuple to string
+ */
+fun<$types> MutableTuple$i<$types>.joinToString(
+    separator: CharSequence = ", ",
+    prefix: CharSequence = "",
+    postfix: CharSequence = "",
+    limit: Int = -1,
+    truncated: CharSequence = "..."
+): String {
+    return joinTo(StringBuilder(), separator, prefix, postfix, limit, truncated).toString()
+}
+
+/**
+ * Convert mutable tuple to tuple
+ */
+fun <$types> MutableTuple$i<$types>.toTuple(): Tuple$i<$types> =
+    Tuple($args)
+/**
+ * Convert tuple to mutable tuple
+ */
+fun <$types> Tuple$i<$types>.toMutableTuple(): MutableTuple$i<$types> =
+    MutableTuple($args)
+<% } // k.times { i ->
+%>
+
+/**
+ * Base class for all MutableTuple companion objects
+ * Provides auxilliary methods
+ */
+open class MutableTuples {
+    /**
+     * Make a tuple of size 0
+     */
+    fun make() = MutableTuple0
+    inline operator fun invoke() = MutableTuple0
+<% (k-1).times { m ->
+    def i = m + 1
+    def types = i.join{ "T$it" }
+    def params = i.join{ "v$it: T$it" }
+    def args = i.join{ "v$it" }
+%>
+    /**
+     * Make a mutable tuple of size $i
+     */
+    fun<$types> make($params) = MutableTuple$i<$types>($args)
+    inline operator fun<$types> invoke($params) = MutableTuple$i<$types>($args)
+<% } // k.times { i -> %>
+
+    /**
+     * Make a mutable tuple containing all the elements of [elements] array
+     * @throws IllegalArgumentException if there is no suitable tuple class available
+     */
+    fun ofArray(elements: Array<Any?>) = when(elements.size) {
+<% k.times { m -> %>
+        $m -> make(${ m.join{ "elements[$it]" } })
+<% } /* (k-1).times { m -> */ %>
+        else -> throw IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
+    }
+
+    /**
+     * Make a mutable tuple containing all the elements of [elements] list
+     * @throws IllegalArgumentException if there is no suitable tuple class available
+     */
+    fun ofList(elements: List<Any?>) = when(elements.size) {
+<% k.times { m -> %>
+        $m -> make(${ m.join{ "elements[$it]" } })
+<% } /* (k-1).times { m -> */ %>
+        else -> throw IllegalArgumentException("ofArray(): array too big: size = \${elements.size}")
+    }
+}
+
+fun<A, B> Pair<A, B>.toMutableTuple(): MutableTuple2<A, B> = MutableTuple(first, second)
+fun<A, B, C> Triple<A, B, C>.toMutableTuple(): MutableTuple3<A, B, C> = MutableTuple(first, second, third)
+fun<A, B> Map.Entry<A, B>.toMutableTuple(): MutableTuple2<A, B> = MutableTuple(key, value)
+
+fun <A, B> MutableTuple2<A, B>.toPair() = Pair(v0, v1)
+fun <A, B, C> MutableTuple3<A, B, C>.toTriple() = Triple(v0, v1, v2)
+
+fun <A, B, M: MutableMap<A, B>> Iterable<MutableTuple2<A, B>>.toMap(m: M): M =
+        forEach { (k, v) -> m.set(k, v) }.let { m }
+fun <A, B> Collection<MutableTuple2<A, B>>.toMap(): Map<A, B> = when {
+    this.isEmpty() -> emptyMap()
+    else -> toMap(LinkedHashMap(size))
+}
+fun <A, B> Iterable<MutableTuple2<A, B>>.toMap(): Map<A, B> = when {
+    this is Collection<*> -> (this as Collection<MutableTuple2<A, B>>).toMap()
+    else -> toMap(mutableMapOf())
+}
+
+inline fun MutableTuple0.toTypedArray() = arrayOf<Any>()
+inline fun<R> MutableTuple0.letAll(f: () -> R) = f()
+
+<% (k-1).times { m ->
+    def i = m + 1
+    def types = i.join{ "T$it" }
+    def args = i.join{ "v$it" }
+    def params = i.join{ "v$it: T$it" }
+    def ts = i.join{ 'T' }
+    def rs = i.join{ 'R' }
+    def stars = i.join{ '*' }
+ %>
+/**
+ * Make an array containing the same elements as this tuple
+ */
+inline fun<reified T> MutableTuple$i<$ts>.toTypedArray() = arrayOf($args)
+/**
+ * Make an array containing the same elements as this mutable tuple
+ */
+inline fun <T, R> MutableTuple$i<$ts>.mapEach(body: (T) -> R): MutableTuple$i<$rs> =
+    MutableTuple(${(0..<i).collect{ "body(v$it)" }.join(', ')})
+/**
+ * Make a list containing the same elements as this tuple
+ */
+fun<T> MutableTuple$i<$ts>.toList(): List<T> =
+    listOf($args)
+/**
+ * Make a tuple containing the same elements as the collection
+ */
+fun<T> MutableTuple${i}.Companion.fromCollection(collection: Collection<T>): MutableTuple$i<$ts> = run {
+    require(collection.size == $i)
+    val it = collection.iterator()
+    MutableTuple(
+        ${ (0..< i).collect { "it.next()" }.join(',\n        ') }
+    )
+}
+<% def reTypeProj = i.join{ "IT$it: T$it" } %>
+<% def reTypes = i.join{ "IT$it" } %>
+/**
+ * Set all elements of this tuple to elements of other tuple
+ * @return [this]
+ */
+inline fun<$types, $reTypeProj> MutableTuple$i<$types>.assign(that: MutableTuple$i<$reTypes>): MutableTuple$i<$types> {
+    <% (0..<i).each { %>
+    v$it = that.v$it
+    <% } %>
+    return this
+}
+/**
+ * Set all elements of this tuple to elements of other tuple
+ * @return [this]
+ */
+inline fun<$types> MutableTuple$i<$types>.assign(that: Tuple$i<$types>): MutableTuple$i<$types> {
+    <% (0..<i).each { %>
+    v$it = that.v$it
+    <% } %>
+    return this
+}
+/**
+ * Apply elements of this tuple as arguments to function [f]
+ */
+inline fun<$types, R> MutableTuple$i<$types>.letAll(f: ($types) -> R): R =
+    f($args)
+/**
+ * Piecewise identity comparison of elements of this tuple with other tuple
+ */
+infix fun<$types> MutableTuple$i<$types>.identityEquals(other: MutableTuple$i<$stars>) =
+    ${(0..<i).collect{ "(v$it === other.v$it)" }.join(' && ')}
+/**
+ * Piecewise identity comparison of elements of this tuple with another object
+ */
+infix fun<$types> MutableTuple$i<$types>.identityEquals(other: Any?) =
+    if(other is MutableTuple$i<$stars>) identityEquals(other) else false
+/**
+ * Test if all elements of this tuple satisfy [predicate]
+ */
+inline fun<T> MutableTuple$i<$ts>.all(predicate: (T) -> Boolean) =
+    ${(0..<i).collect{ "predicate(v$it)" }.join(' && ')}
+/**
+ * Test if any element of this tuple satisfies [predicate]
+ */
+inline fun<T> MutableTuple$i<$ts>.any(predicate: (T) -> Boolean) =
+    ${(0..<i).collect{ "predicate(v$it)" }.join(' || ')}
+/**
+ * Test if no elements of this tuple satisfy [predicate]
+ */
+inline fun<T> MutableTuple$i<$ts>.none(predicate: (T) -> Boolean) =
+    ${(0..<i).collect{ "!predicate(v$it)" }.join(' && ')}
+<% } // k.times { i -> %>
+
+<% (k-1).times { m -> %>
+<%     m.times { n -> %>
+<%         def types = m.join{ "T$it" } %>
+<%         def mappedTypes = m.join{ it == n ? "R" : "T$it" } %>
+/**
+ * Map $n-th element of this tuple, returning an $m-tuple containing all the same elements except for
+ * element $n that is replaced by result of [f]
+ */
+inline fun<$types, R> MutableTuple${m} <$types>.map${n}(f: (T$n) -> R) =
+    MutableTuple(${m.join{ it != n ? "v$it" : "f(v$it)" }})
+/**
+ * Map $n-th element of this tuple, returning an $m-tuple containing all the same elements except for
+ * element $n that is replaced by result of [f]
+ */
+inline fun<$types, R> MutableTuple${m} <$types>.map${n}To(data: MutableTuple${m}<$mappedTypes>, f: (T$n) -> R): MutableTuple${m}<$mappedTypes> {
+<% m.times { i -> %>
+    data.v$i = ${ if (i == n) "f(v$i)" else "v$i" }
+<% } /* m.times */ %>
+    return data
+}
+<%     } /* (each n -> */ %>
+<% } /* (each m -> */ %>
+
+/**
+ * Empty tuple plus an element is a 1-tuple
+ */
+inline operator fun <T> MutableTuple0.plus(v0: T) = Tuple(v0)
+
+<% (2..(k-1)).each { m -> %>
+<%     (1..(m-1)).each { l -> %>
+<%         def r = m - l %>
+<%         def typelist = (0..<m).collect{ "T$it" } %>
+/**
+ * An $l-tuple plus an $r-tuple results in a ${l+r}-tuple containing all the elements of [this] and [that]
+ * in the same exact order
+ */
+inline operator fun<${typelist.join(', ')}> MutableTuple${l} <${typelist.take(l).join(', ')}>.plus(that: MutableTuple${r} <${typelist.drop(l).join(', ')}>) = run {
+    val (${(0..<l).collect{ "v$it" }.join(', ')}) = this
+    val (${(l..<m).collect{ "v$it" }.join(', ')}) = that
+    MutableTuple(${(0..<m).collect{ "v$it" }.join(', ')})
+}
+<%     } /* (each l -> */ %>
+<% } /* (each m -> */ %>
+<% /********************/ %>
+<% (2..(k-1)).each { m -> %>
+<%    def typelist = (0..<m).collect{ "T$it" } %>
+/**
+ * An ${m-1}-tuple plus a single element results in a ${m}-tuple containing all the elements of [this] and [that]
+ * in the same exact order
+ */
+inline operator fun<${typelist.join(', ')}> MutableTuple${m-1} <${typelist.take(m-1).join(', ')}>.plus(v${m-1}: T${m-1}) = run {
+    val (${(0..<(m-1)).collect{ "v$it" }.join(', ')}) = this
+    MutableTuple(${(0..<m).collect{ "v$it" }.join(', ')})
+}
+<% } /* (each m -> */ %>
+
+
+fun MutableTuple0.sort() {}
+fun <T: Comparable<T>> MutableTuple1<T>.sort() {}
+fun <T: Comparable<T>> MutableTuple2<T, T>.sort() {
+    if(v1 < v0) {
+        val tmp = v0
+        v0 = v1
+        v1 = tmp
+    }
+}
+
+<%
+    def sort2andSwap = { x, y -> "if(v$y < v$x) { val tmp = v$x; v$x = v$y; v$y = tmp }" }
+%>
+<% (3..(k-1)).each { m -> %>
+<%    def typelist = (0..<m).collect{ 'T' }.join(', ') %>
+<%    def vlist = (0..<m).collect{ "v$it" }.join(', ') %>
+fun <T: Comparable<T>> MutableTuple${m}<${typelist}>.sort() {
+<%  (m-1).times { i ->
+       (m-i-1).times { j -> %>
+    ${sort2andSwap(j, j + 1)}
+<%      }/* (m-1).times { j -> */
+    } /* (m-1).times { i -> */ %>
+}
+<% } /* (1..(k-1)).each { m */ %>
+
+inline fun <T: Comparable<T>> MutableTuple1<T>.sortWith(cmp: Comparator<T>) {}
+inline fun <T: Comparable<T>> MutableTuple2<T, T>.sortWith(cmp: Comparator<T>) {
+    if(cmp.compare(v1, v0) < 0) {
+        val tmp = v0
+        v0 = v1
+        v1 = tmp
+    }
+}
+
+<%
+    def sort2andSwapCmp = { x, y -> "if(cmp.compare(v$y, v$x) < 0) { val tmp = v$x; v$x = v$y; v$y = tmp }" }
+%>
+<% (3..(k-1)).each { m -> %>
+<%    def typelist = (0..<m).collect{ 'T' }.join(', ') %>
+<%    def vlist = (0..<m).collect{ "v$it" }.join(', ') %>
+inline fun <T> MutableTuple${m}<${typelist}>.sortWith(cmp: Comparator<T>) {
+<%  (m-1).times { i ->
+       (m-i-1).times { j -> %>
+    ${sort2andSwapCmp(j, j + 1)}
+<%      }/* (m-1).times { j -> */
+    } /* (m-1).times { i -> */ %>
+}
+<% } /* (1..(k-1)).each { m */ %>
