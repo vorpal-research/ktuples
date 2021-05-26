@@ -3,7 +3,7 @@ import groovy.text.GStringTemplateEngine
 
 buildscript {
     repositories {
-        jcenter()
+        mavenCentral()
     }
 }
 
@@ -139,7 +139,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/vorpal-research/kotlin-maven"
+            url = "https://maven.vorpal-research.science/publish"
             credentials {
                 username = (project.findProperty('githubActor') ?: System.getenv('GITHUB_ACTOR'))
                 password = (project.findProperty('githubToken') ?: System.getenv('GITHUB_TOKEN'))
