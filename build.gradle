@@ -8,12 +8,12 @@ buildscript {
 }
 
 plugins {
-    id("org.jetbrains.kotlin.multiplatform").version("1.4.31")
+    id("org.jetbrains.kotlin.multiplatform").version("1.5.0")
     id "maven-publish"
 }
 
 group 'ru.spbstu'
-version (findProperty('forceVersion') ?: '0.0.2.2')
+version (findProperty('forceVersion') ?: '0.0.2.3')
 
 repositories {
     mavenCentral()
@@ -66,7 +66,7 @@ kotlin {
     jvm {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.6"
+                jvmTarget = "1.8"
             }
         }
     }
@@ -75,7 +75,7 @@ kotlin {
         browser {
             testTask {
                 useKarma {
-                    usePhantomJS()
+                    useFirefoxHeadless()
                 }
             }
         }
@@ -90,8 +90,8 @@ kotlin {
     sourceSets {
         all {
             languageSettings {
-                languageVersion = "1.4"
-                apiVersion = "1.4"
+                languageVersion = "1.5"
+                apiVersion = "1.5"
                 useExperimentalAnnotation("kotlin.RequiresOptIn")
             }
         }
@@ -112,7 +112,6 @@ kotlin {
             dependsOn(commonTest)
             dependsOn(jvmMain)
             dependencies {
-                implementation(kotlin("test"))
                 implementation(kotlin("test-testng"))
             }
         }
