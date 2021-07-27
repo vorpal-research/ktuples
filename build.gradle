@@ -8,12 +8,13 @@ buildscript {
 }
 
 plugins {
-    id("org.jetbrains.kotlin.multiplatform").version("1.5.0")
+    id("org.jetbrains.kotlin.multiplatform").version("1.5.21")
+    id("org.jetbrains.kotlin.plugin.serialization").version("1.5.21")
     id "maven-publish"
 }
 
 group 'ru.spbstu'
-version (findProperty('forceVersion') ?: '0.0.2.3')
+version (findProperty('forceVersion') ?: '0.0.2.4')
 
 repositories {
     mavenCentral()
@@ -70,7 +71,7 @@ kotlin {
             }
         }
     }
-    js {
+    js(IR) {
         nodejs()
         browser {
             testTask {
@@ -97,12 +98,16 @@ kotlin {
         }
 
         commonMain {
+            dependencies {
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.2.2")
+            }
         }
         commonTest {
             dependsOn(commonMain)
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
             }
         }
         jvmMain {

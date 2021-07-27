@@ -1,5 +1,10 @@
 @file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
+//@file:OptIn(ExperimentalSerializationApi::class)
 package ru.spbstu.ktuples;
+
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.Serializable
+
 <%
 def k = number
 %>
@@ -17,6 +22,7 @@ sealed class Tuple {
 /**
  * A 0-tuple, mostly exists for convenience
  */
+@Serializable(Tuple0Serializer::class)
 object Tuple0: Tuple() {
     override val size = 0
     override fun toString() = "Tuple()"
@@ -62,6 +68,7 @@ fun Tuple0.joinToString(
  * @param T$j the type of v$j
 <% } // i.times %> *
  */
+@Serializable(with = Tuple${i}Serializer::class)
 data class Tuple$i<$typesOut>($params): Tuple() {
     override val size get() = $i
     override fun toString() = "Tuple($stringTemplate)"

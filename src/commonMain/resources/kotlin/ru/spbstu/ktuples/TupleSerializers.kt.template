@@ -1,0 +1,143 @@
+@file:Suppress("UNUSED_PARAMETER", "NOTHING_TO_INLINE")
+@file:OptIn(ExperimentalSerializationApi::class)
+package ru.spbstu.ktuples;
+
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.SerialKind
+import kotlinx.serialization.descriptors.StructureKind
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+
+<%
+def k = number
+%>
+
+class TupleDescriptor(vararg val elementDescriptors: SerialDescriptor) : SerialDescriptor {
+    private val size get() = elementDescriptors.size
+    override val kind: SerialKind get() = StructureKind.LIST
+    override val elementsCount: Int get() = size
+
+    @ExperimentalSerializationApi
+    override val serialName: String = "ru.spbstu.ktuples.Tuple${'$'}size"
+
+    private val indexRange get() = 0 until elementsCount
+    private fun requireValidIndex(index: Int) {
+        require(index in indexRange) { "Illegal index ${'$'}index, ${'$'}serialName expects only indices in range ${'$'}indexRange"}
+    }
+
+    override fun getElementName(index: Int): String = index.toString()
+    override fun getElementIndex(name: String): Int =
+        name.toIntOrNull() ?: throw IllegalArgumentException("${'$'}name is not a valid list index")
+
+    override fun isElementOptional(index: Int): Boolean {
+        requireValidIndex(index)
+        return false
+    }
+
+    override fun getElementAnnotations(index: Int): List<Annotation> {
+        requireValidIndex(index)
+        return emptyList()
+    }
+
+    override fun getElementDescriptor(index: Int): SerialDescriptor {
+        requireValidIndex(index)
+        return elementDescriptors[index]
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TupleDescriptor) return false
+        if (elementDescriptors.contentEquals(other.elementDescriptors)
+            && serialName == other.serialName) return true
+        return false
+    }
+
+    override fun hashCode(): Int {
+        return elementDescriptors.contentHashCode() * 31 + serialName.hashCode()
+    }
+
+    override fun toString(): String =
+        serialName + elementDescriptors.joinToString(prefix = "(", postfix = ")")
+}
+
+object Tuple0Serializer: KSerializer<Tuple0> {
+    override val descriptor: SerialDescriptor = TupleDescriptor()
+
+    override fun serialize(encoder: Encoder, value: Tuple0) {
+        val composite = encoder.beginCollection(descriptor, 0)
+        composite.endStructure(descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): Tuple0 {
+        val composite = decoder.beginStructure(descriptor)
+        if (!composite.decodeSequentially()) {
+            val index = composite.decodeElementIndex(descriptor)
+            require(index == CompositeDecoder.DECODE_DONE)
+        }
+        composite.endStructure(descriptor)
+        return Tuple0
+        /* do nothing*/
+    }
+}
+
+
+<% (k-1).times { m ->
+    def i = m + 1
+
+    def types = i.join{ "T$it" }
+    def typesOut = i.join{ "out T$it" }
+    def typesComparable = i.join{ "T$it: Comparable<T$it>" }
+
+    def stringTemplate = i.join{ "\$v$it" }
+    def params = i.join{ "val v$it: T$it" }
+    def serializers = i.join { "val v${it}Serializer: KSerializer<T${it}>" }
+    def nnvalues = i.join{ "v${it}!!" }
+    def descriptors = i.join{ "v${it}Serializer.descriptor" }
+%>
+
+class Tuple${i}Serializer<${types}>(${serializers}):
+    KSerializer<Tuple${i}<${types}>> {
+    override val descriptor: SerialDescriptor = TupleDescriptor(${descriptors})
+
+    override fun serialize(encoder: Encoder, value: Tuple${i}<${types}>) {
+        val composite = encoder.beginCollection(descriptor, ${i})
+<% i.times { j -> %>
+        composite.encodeSerializableElement(descriptor, ${j}, v${j}Serializer, value.v${j})
+<% } // i.times %>
+        composite.endStructure(descriptor)
+    }
+
+    override fun deserialize(decoder: Decoder): Tuple${i}<${types}> {
+        val composite = decoder.beginStructure(descriptor)
+<% i.times { j -> %>
+        var v${j}: T${j}? = null
+<% } // i.times %>
+
+        if (composite.decodeSequentially()) {
+<% i.times { j -> %>
+            v${j} = composite.decodeSerializableElement(descriptor, ${j}, v${j}Serializer, v${j})
+<% } // i.times %>
+        } else {
+            while (true) {
+                val index = composite.decodeElementIndex(descriptor)
+                if (index == CompositeDecoder.DECODE_DONE) break
+                when (index) {
+<% i.times { j -> %>
+                    ${j} -> v${j} = composite.decodeSerializableElement(descriptor, ${j}, v${j}Serializer, v${j})
+<% } // i.times %>
+                    else -> throw IllegalArgumentException()
+                }
+            }
+        }
+        composite.endStructure(descriptor)
+<% i.times { j -> %>
+        check(v${j} !== null)
+<% } // i.times %>
+        return Tuple($nnvalues)
+    }
+}
+
+<% } /* (1..(k-1)).each { m */ %>
