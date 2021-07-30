@@ -117,7 +117,7 @@ kotlin {
             dependsOn(commonTest)
             dependsOn(jvmMain)
             dependencies {
-                implementation(kotlin("test-testng"))
+                implementation(kotlin("test"))
             }
         }
         jsMain {
