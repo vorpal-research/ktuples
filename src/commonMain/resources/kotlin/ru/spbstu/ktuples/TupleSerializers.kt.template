@@ -98,7 +98,7 @@ object Tuple0Serializer: KSerializer<Tuple0> {
     def descriptors = i.join{ "v${it}Serializer.descriptor" }
 %>
 
-class Tuple${i}Serializer<${types}>(${serializers}):
+class Tuple${i}Serializer< <%= i.join { "T$it" } %> >(${serializers}):
     KSerializer<Tuple${i}<${types}>> {
     override val descriptor: SerialDescriptor = TupleDescriptor(${descriptors})
 
@@ -136,7 +136,7 @@ class Tuple${i}Serializer<${types}>(${serializers}):
 <% i.times { j -> %>
         check(v${j} !== null)
 <% } // i.times %>
-        return Tuple($nnvalues)
+        return Tuple(<%= i.join { "v$it!!" } %>)
     }
 }
 
